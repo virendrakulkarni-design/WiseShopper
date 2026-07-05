@@ -1,0 +1,296 @@
+[
+  {
+    "id": "amazon",
+    "name": "Amazon",
+    "logo": "🛒",
+    "color": "#FF9900",
+    "baseUrl": "https://www.amazon.in",
+    "searchUrl": "https://www.amazon.in/s?k={query}&i=hpc&rh=n%3A1571271031",
+    "categories": ["medicines", "grocery", "stationary", "household", "electronics", "personal_care"],
+    "deliveryThreshold": 499,
+    "avgDelivery": 40,
+    "deliveryDays": "1-2",
+    "paymentOffers": [
+      { "bank": "HDFC", "type": "Credit Card", "discount": 5, "maxDiscount": 750 },
+      { "bank": "SBI", "type": "Credit Card", "discount": 5, "maxDiscount": 500 },
+      { "bank": "ICICI", "type": "Credit Card", "discount": 10, "maxDiscount": 1500, "minCart": 5000 },
+      { "method": "UPI", "cashback": 0 }
+    ],
+    "primeDiscount": 10
+  },
+  {
+    "id": "flipkart",
+    "name": "Flipkart",
+    "logo": "🏪",
+    "color": "#2874F0",
+    "baseUrl": "https://www.flipkart.com",
+    "searchUrl": "https://www.flipkart.com/search?q={query}",
+    "categories": ["grocery", "stationary", "household", "electronics", "personal_care"],
+    "deliveryThreshold": 500,
+    "avgDelivery": 40,
+    "deliveryDays": "2-3",
+    "paymentOffers": [
+      { "bank": "Axis", "type": "Credit Card", "discount": 5, "maxDiscount": 500 },
+      { "bank": "Kotak", "type": "Credit Card", "discount": 5, "maxDiscount": 500 },
+      { "method": "UPI", "cashback": 0 }
+    ]
+  },
+  {
+    "id": "1mg",
+    "name": "1mg",
+    "logo": "💊",
+    "color": "#E40046",
+    "baseUrl": "https://www.1mg.com",
+    "searchUrl": "https://www.1mg.com/search/all?name={query}",
+    "categories": ["medicines", "personal_care", "healthcare", "vitamins"],
+    "deliveryThreshold": 0,
+    "avgDelivery": 35,
+    "deliveryDays": "1-2",
+    "paymentOffers": [
+      { "method": "UPI", "cashback": 50, "minCart": 299 },
+      { "bank": "HDFC", "type": "Credit Card", "discount": 5, "maxDiscount": 300 }
+    ],
+    "specialOffer": "Up to 25% off on generics"
+  },
+  {
+    "id": "netmeds",
+    "name": "Netmeds",
+    "logo": "🏥",
+    "color": "#00A651",
+    "baseUrl": "https://www.netmeds.com",
+    "searchUrl": "https://www.netmeds.com/catalogsearch/result?q={query}",
+    "categories": ["medicines", "personal_care", "healthcare", "vitamins", "ayurvedic"],
+    "deliveryThreshold": 0,
+    "avgDelivery": 45,
+    "deliveryDays": "2-3",
+    "paymentOffers": [
+      { "method": "UPI", "cashback": 75, "minCart": 499 },
+      { "code": "NET15", "discount": 15, "maxDiscount": 200 }
+    ],
+    "specialOffer": "Extra 15% off with code NET15"
+  },
+  {
+    "id": "apollo",
+    "name": "Apollo Pharmacy",
+    "logo": "⚕️",
+    "color": "#005B8E",
+    "baseUrl": "https://www.apollopharmacy.in",
+    "searchUrl": "https://www.apollopharmacy.in/search/{query}",
+    "categories": ["medicines", "personal_care", "healthcare", "vitamins", "ayurvedic", "surgical"],
+    "deliveryThreshold": 0,
+    "avgDelivery": 40,
+    "deliveryDays": "1-2",
+    "paymentOffers": [
+      { "method": "UPI", "cashback": 50, "minCart": 399 },
+      { "bank": "Apollo", "type": "Credit Card", "discount": 10, "maxDiscount": 500 }
+    ],
+    "specialOffer": "Circle members get 15% off"
+  },
+  {
+    "id": "medplus",
+    "name": "MedPlus",
+    "logo": "🩺",
+    "color": "#009EE3",
+    "baseUrl": "https://www.medplusmart.com",
+    "searchUrl": "https://www.medplusmart.com/search/{query}",
+    "categories": ["medicines", "personal_care", "healthcare", "vitamins"],
+    "deliveryThreshold": 0,
+    "avgDelivery": 35,
+    "deliveryDays": "1-2",
+    "paymentOffers": [
+      { "method": "Any", "cashback": 0 },
+      { "code": "MEDPLUS10", "discount": 10, "maxDiscount": 150 }
+    ]
+  },
+  {
+    "id": "bigbasket",
+    "name": "BigBasket",
+    "logo": "🧺",
+    "color": "#84C225",
+    "baseUrl": "https://www.bigbasket.com",
+    "searchUrl": "https://www.bigbasket.com/ps/?q={query}",
+    "categories": ["grocery", "household", "personal_care", "dairy", "beverages", "snacks"],
+    "deliveryThreshold": 0,
+    "avgDelivery": 30,
+    "deliveryDays": "Same day / Next day",
+    "paymentOffers": [
+      { "bank": "HDFC", "type": "Credit Card", "discount": 5, "maxDiscount": 300 },
+      { "method": "BB Wallet", "cashback": 0 }
+    ],
+    "specialOffer": "BB Star members get free delivery"
+  },
+  {
+    "id": "blinkit",
+    "name": "Blinkit",
+    "logo": "⚡",
+    "color": "#F8C700",
+    "baseUrl": "https://blinkit.com",
+    "searchUrl": "https://blinkit.com/s/?q={query}",
+    "categories": ["grocery", "household", "personal_care", "dairy", "beverages", "medicines"],
+    "deliveryThreshold": 199,
+    "avgDelivery": 25,
+    "deliveryDays": "10-15 minutes",
+    "paymentOffers": [
+      { "method": "UPI", "cashback": 50, "minCart": 299 }
+    ],
+    "specialOffer": "10-15 min delivery"
+  },
+  {
+    "id": "swiggy",
+    "name": "Swiggy Instamart",
+    "logo": "🛵",
+    "color": "#FC8019",
+    "baseUrl": "https://www.swiggy.com/instamart",
+    "searchUrl": "https://www.swiggy.com/instamart/search?query={query}",
+    "categories": ["grocery", "household", "personal_care", "dairy", "beverages", "snacks"],
+    "deliveryThreshold": 149,
+    "avgDelivery": 30,
+    "deliveryDays": "15-30 minutes",
+    "paymentOffers": [
+      { "method": "UPI", "cashback": 60, "minCart": 249 },
+      { "method": "Swiggy Money", "cashback": 0 }
+    ]
+  },
+  {
+    "id": "dmart",
+    "name": "DMart Ready",
+    "logo": "🏬",
+    "color": "#1B3C8B",
+    "baseUrl": "https://www.dmart.in",
+    "searchUrl": "https://www.dmart.in/search?q={query}",
+    "categories": ["grocery", "household", "personal_care", "stationary", "dairy", "beverages"],
+    "deliveryThreshold": 1500,
+    "avgDelivery": 50,
+    "deliveryDays": "Same day / Next day",
+    "paymentOffers": [
+      { "method": "Any", "cashback": 0 }
+    ],
+    "specialOffer": "Everyday low prices — no promo needed"
+  },
+  {
+    "id": "jiomart",
+    "name": "JioMart",
+    "logo": "🛍️",
+    "color": "#004B88",
+    "baseUrl": "https://www.jiomart.com",
+    "searchUrl": "https://www.jiomart.com/search/{query}",
+    "categories": ["grocery", "household", "stationary", "dairy", "beverages", "electronics"],
+    "deliveryThreshold": 750,
+    "avgDelivery": 35,
+    "deliveryDays": "1-2 days",
+    "paymentOffers": [
+      { "bank": "Jio", "type": "Prepaid", "discount": 5, "maxDiscount": 200 },
+      { "method": "UPI", "cashback": 50, "minCart": 499 }
+    ]
+  },
+  {
+    "id": "zepto",
+    "name": "Zepto",
+    "logo": "🚀",
+    "color": "#7B2FF7",
+    "baseUrl": "https://www.zeptonow.com",
+    "searchUrl": "https://www.zeptonow.com/search?query={query}",
+    "categories": ["grocery", "household", "personal_care", "dairy", "beverages", "medicines"],
+    "deliveryThreshold": 199,
+    "avgDelivery": 29,
+    "deliveryDays": "10-30 minutes",
+    "paymentOffers": [
+      { "method": "UPI", "cashback": 50, "minCart": 299 }
+    ],
+    "specialOffer": "10-minute express delivery"
+  },
+  {
+    "id": "daava",
+    "name": "Daava India",
+    "logo": "🌿",
+    "color": "#2D7A2D",
+    "baseUrl": "https://www.daavaindia.com",
+    "searchUrl": "https://www.daavaindia.com/search?q={query}",
+    "categories": ["medicines", "ayurvedic", "herbal", "healthcare"],
+    "deliveryThreshold": 499,
+    "avgDelivery": 50,
+    "deliveryDays": "3-5 days",
+    "paymentOffers": [
+      { "code": "DAAVA10", "discount": 10, "maxDiscount": 100 }
+    ]
+  },
+  {
+    "id": "pharmeasy",
+    "name": "PharmEasy",
+    "logo": "💉",
+    "color": "#41B883",
+    "baseUrl": "https://pharmeasy.in",
+    "searchUrl": "https://pharmeasy.in/search/all?name={query}",
+    "categories": ["medicines", "personal_care", "healthcare", "vitamins", "surgical"],
+    "deliveryThreshold": 0,
+    "avgDelivery": 40,
+    "deliveryDays": "2-4 days",
+    "paymentOffers": [
+      { "method": "UPI", "cashback": 75, "minCart": 399 },
+      { "code": "EASY20", "discount": 20, "maxDiscount": 300 }
+    ]
+  },
+  {
+    "id": "tatacliq",
+    "name": "Tata CLiQ Palette",
+    "logo": "🎨",
+    "color": "#E40521",
+    "baseUrl": "https://www.tatacliq.com",
+    "searchUrl": "https://www.tatacliq.com/search/?searchCategory=all&text={query}",
+    "categories": ["personal_care", "healthcare", "household", "electronics"],
+    "deliveryThreshold": 500,
+    "avgDelivery": 45,
+    "deliveryDays": "2-4 days",
+    "paymentOffers": [
+      { "bank": "Tata", "type": "Credit Card", "discount": 10, "maxDiscount": 1000 }
+    ]
+  },
+  {
+    "id": "nykaa",
+    "name": "Nykaa",
+    "logo": "💄",
+    "color": "#FC2779",
+    "baseUrl": "https://www.nykaa.com",
+    "searchUrl": "https://www.nykaa.com/search/result/?q={query}",
+    "categories": ["personal_care", "healthcare", "vitamins", "beauty"],
+    "deliveryThreshold": 500,
+    "avgDelivery": 40,
+    "deliveryDays": "2-3 days",
+    "paymentOffers": [
+      { "bank": "HDFC", "type": "Credit Card", "discount": 5, "maxDiscount": 300 },
+      { "code": "NYKAA10", "discount": 10, "maxDiscount": 200 }
+    ]
+  },
+  {
+    "id": "meesho",
+    "name": "Meesho",
+    "logo": "🛒",
+    "color": "#9B2D8E",
+    "baseUrl": "https://www.meesho.com",
+    "searchUrl": "https://www.meesho.com/search?q={query}",
+    "categories": ["household", "stationary", "personal_care", "grocery"],
+    "deliveryThreshold": 0,
+    "avgDelivery": 35,
+    "deliveryDays": "4-7 days",
+    "paymentOffers": [
+      { "method": "Any", "cashback": 0 }
+    ],
+    "specialOffer": "Free delivery on all orders"
+  },
+  {
+    "id": "wellness",
+    "name": "Wellness Forever",
+    "logo": "🌟",
+    "color": "#00529B",
+    "baseUrl": "https://www.wellnessforever.com",
+    "searchUrl": "https://www.wellnessforever.com/search?query={query}",
+    "categories": ["medicines", "personal_care", "healthcare", "vitamins", "baby_care"],
+    "deliveryThreshold": 0,
+    "avgDelivery": 40,
+    "deliveryDays": "1-2 days",
+    "paymentOffers": [
+      { "method": "Any", "cashback": 0 },
+      { "code": "WELL10", "discount": 10, "maxDiscount": 150 }
+    ]
+  }
+]

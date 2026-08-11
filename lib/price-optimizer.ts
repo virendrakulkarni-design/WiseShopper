@@ -19,6 +19,8 @@ export interface BundlePlan {
   deliveryCharge: number;
   total: number;
   savings: number;
+  deliveryBreakdown?: Array<{ platform: string; subtotal: number; delivery: number; freeThreshold: number }>;
+  thresholdTip?: string;
   paymentOptions: PaymentOptionSummary[];
 }
 
@@ -37,21 +39,8 @@ export function optimizeCart(cartItems: CartItem[]): {
 } {
   if (cartItems.length === 0) return { bestSplit: [], singlePlatformPlans: [], savings: 0 };
 
-  // Group by platform and find best platform for each item
-  const platformMap: Record<string, Array<{ itemName: string; result: SearchResult }>> = {};
-
-  cartItems.forEach((ci) => {
-    const best = ci.results.sort((a, b) => a.totalCost - b.totalCost)[0];
-    if (!best) return;
-    const pid = best.platform.id;
-    if (!platformMap[pid]) platformMap[pid] = [];
-    platformMap[pid].push({ itemName: ci.itemName, result: best });
-  });
-
-  // Build bundle plans
+  // 1. Single platform plans: calculate if all items were bought on one platform
   const singlePlatformPlans: BundlePlan[] = [];
-
-  // For each platform, calculate if all items were bought there
   const allPlatforms = new Set(
     cartItems.flatMap((ci) => ci.results.map((r) => r.platform.id))
   );
@@ -71,9 +60,15 @@ export function optimizeCart(cartItems: CartItem[]): {
     if (!allAvailable || platformResults.length === 0) return;
 
     const platform = platformResults[0].result.platform;
-    const deliveryCharge = subtotal >= platform.deliveryThreshold ? 0 : platform.avgDelivery;
+    const deliveryCharge = (platform.deliveryThreshold > 0 && subtotal >= platform.deliveryThreshold) || platform.deliveryThreshold === 0 ? 0 : platform.avgDelivery;
     const total = subtotal + deliveryCharge;
     const savings = platformResults.reduce((s, pr) => s + (pr.result.estimatedMrp - pr.result.estimatedPrice), 0);
+
+    let thresholdTip: string | undefined;
+    if (deliveryCharge > 0 && platform.deliveryThreshold > subtotal) {
+      const diff = platform.deliveryThreshold - subtotal;
+      thresholdTip = `Add ₹${diff} more on ${platform.name} for FREE delivery!`;
+    }
 
     singlePlatformPlans.push({
       items: platformResults,
@@ -84,20 +79,50 @@ export function optimizeCart(cartItems: CartItem[]): {
       deliveryCharge,
       total,
       savings,
+      thresholdTip,
       paymentOptions: buildPaymentOptions(platform.paymentOffers, total),
     });
   });
 
   singlePlatformPlans.sort((a, b) => a.total - b.total);
 
-  // Best split: each item from cheapest platform
+  // 2. Best split: pick the cheapest option for each item across platforms
   const bestSplitItems: Array<{ itemName: string; result: SearchResult }> = [];
   cartItems.forEach((ci) => {
     const best = [...ci.results].sort((a, b) => a.totalCost - b.totalCost)[0];
     if (best) bestSplitItems.push({ itemName: ci.itemName, result: best });
   });
 
-  const splitTotal = bestSplitItems.reduce((s, i) => s + i.result.totalCost, 0);
+  // Calculate per-platform subtotal and delivery for the split
+  const platformSubtotals: Record<string, { platform: SearchResult["platform"]; subtotal: number; items: string[] }> = {};
+  bestSplitItems.forEach((item) => {
+    const pid = item.result.platform.id;
+    if (!platformSubtotals[pid]) {
+      platformSubtotals[pid] = { platform: item.result.platform, subtotal: 0, items: [] };
+    }
+    platformSubtotals[pid].subtotal += item.result.estimatedPrice;
+    platformSubtotals[pid].items.push(item.itemName);
+  });
+
+  let splitSubtotal = 0;
+  let totalSplitDelivery = 0;
+  const deliveryBreakdown: Array<{ platform: string; subtotal: number; delivery: number; freeThreshold: number }> = [];
+
+  Object.values(platformSubtotals).forEach(({ platform, subtotal }) => {
+    splitSubtotal += subtotal;
+    const fee = (platform.deliveryThreshold > 0 && subtotal >= platform.deliveryThreshold) || platform.deliveryThreshold === 0
+      ? 0
+      : platform.avgDelivery;
+    totalSplitDelivery += fee;
+    deliveryBreakdown.push({
+      platform: platform.name,
+      subtotal,
+      delivery: fee,
+      freeThreshold: platform.deliveryThreshold,
+    });
+  });
+
+  const splitTotal = splitSubtotal + totalSplitDelivery;
   const splitSavings = bestSplitItems.reduce(
     (s, i) => s + (i.result.estimatedMrp - i.result.estimatedPrice),
     0
@@ -106,21 +131,26 @@ export function optimizeCart(cartItems: CartItem[]): {
   const bestSplit: BundlePlan[] = [
     {
       items: bestSplitItems,
-      platform: "Multiple",
+      platform: "Split across " + Object.keys(platformSubtotals).length + " Stores",
       platformLogo: "🌐",
       platformColor: "#6B7280",
-      subtotal: splitTotal,
-      deliveryCharge: 0,
+      subtotal: splitSubtotal,
+      deliveryCharge: totalSplitDelivery,
       total: splitTotal,
       savings: splitSavings,
+      deliveryBreakdown,
       paymentOptions: [],
     },
   ];
 
+  // Compare best single store vs split
+  const bestSingleTotal = singlePlatformPlans[0]?.total ?? splitTotal;
+  const savings = bestSingleTotal > splitTotal ? bestSingleTotal - splitTotal : 0;
+
   return {
     bestSplit,
     singlePlatformPlans: singlePlatformPlans.slice(0, 5),
-    savings: singlePlatformPlans[0] ? splitTotal - singlePlatformPlans[0].total : 0,
+    savings,
   };
 }
 

@@ -23,6 +23,7 @@
 # misc
 .DS_Store
 *.pem
+public/cart_selections_*.csv
 
 # debug
 npm-debug.log*

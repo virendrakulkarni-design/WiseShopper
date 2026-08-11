@@ -56,6 +56,11 @@ export interface SearchResult {
   imageUrl: string;       // demo product thumbnail
   productForm: string;    // "Tablet" | "Oil" | "Cream" | "Gel" | "Syrup" | "Powder" | "Spray" etc.
   productFormWarning?: string; // highlight when form might be ambiguous
+  priceInsight?: {
+    label: "Low" | "Typical" | "High";
+    sparkline: number[];
+  };
+  aiSummary?: string;
 }
 
 const platforms: Platform[] = platformsData as Platform[];
@@ -109,10 +114,9 @@ export function detectProductForm(query: string): { form: string; warning?: stri
 
 // ── Build demo image URL using Picsum (consistent per item+platform) ─────────
 function buildImageUrl(query: string, platformId: string): string {
-  // Use Unsplash source for more realistic images based on query and platform
-  const terms = encodeURIComponent(`${query} ${platformId}`);
-  // Unsplash provides a random featured image for the given terms
-  return `https://source.unsplash.com/featured/120x120?${terms}`;
+  // Use Picsum to generate a consistent placeholder image that actually loads
+  const seed = encodeURIComponent(`${query}-${platformId}`);
+  return `https://picsum.photos/seed/${seed}/120/120`;
 }
 
 
@@ -163,8 +167,20 @@ async function fetchRealResults(
       productForm: d.productForm ?? "Item",
       productFormWarning: d.productFormWarning,
       badge: d.badge,
+      priceInsight: generateMockPriceInsight(d.totalCost),
+      aiSummary: generateMockAiSummary(d.rating, d.positiveReviews),
     } as SearchResult;
   });
+}
+
+function generateMockAiSummary(rating: number, positiveReviews: number): string {
+  if (rating >= 4.5 && positiveReviews > 90) {
+    return "Users love the excellent quality and fast results, highly recommended.";
+  } else if (rating >= 4.0) {
+    return "Good overall value; some users noted minor packaging issues.";
+  } else {
+    return "Mixed reviews; users cite average performance but decent pricing.";
+  }
 }
 
 export async function getAllSearchResults(
@@ -181,8 +197,20 @@ export async function getAllSearchResults(
       console.warn("Real data fetch failed, falling back to demo mode:", e);
     }
   }
+
+  let effectiveCategory = category;
+  if (effectiveCategory === "all") {
+    if (normalizedQuery.toLowerCase().includes("milk") || normalizedQuery.toLowerCase().includes("bread") || normalizedQuery.toLowerCase().includes("sugar")) {
+      effectiveCategory = "grocery";
+    } else if (normalizedQuery.toLowerCase().includes("dolo") || normalizedQuery.toLowerCase().includes("ortho") || normalizedQuery.toLowerCase().includes("medicine")) {
+      effectiveCategory = "medicines";
+    } else {
+      effectiveCategory = "personal_care";
+    }
+  }
+
   // Demo fallback (original simulation)
-  const relevantPlatforms = getCategoryPlatforms(category);
+  const relevantPlatforms = getCategoryPlatforms(effectiveCategory);
   const { form, warning } = detectProductForm(normalizedQuery);
 
   return relevantPlatforms.map((platform) => {
@@ -220,6 +248,7 @@ export async function getAllSearchResults(
       imageUrl: buildImageUrl(normalizedQuery, platform.id),
       productForm: form,
       productFormWarning: warning,
+      priceInsight: generateMockPriceInsight(total),
     };
   });
 }
@@ -245,6 +274,32 @@ function simulatePrice(query: string, category: string): number {
     return 20 + Math.random() * 200;
   }
   return 100 + Math.random() * 500;
+}
+
+function generateMockPriceInsight(currentPrice: number) {
+  // Generate 7 data points (last 7 days or something)
+  const sparkline = Array.from({ length: 7 }, () => {
+    // vary between 80% and 130% of current price to create some interesting spikes
+    return currentPrice * (0.8 + Math.random() * 0.5);
+  });
+  
+  // ensure the last point connects reasonably to current price
+  sparkline.push(currentPrice);
+
+  const max = Math.max(...sparkline);
+  const min = Math.min(...sparkline);
+  
+  // Normalize sparkline values to 0-100 scale for CSS graph
+  const range = max - min || 1;
+  const normalizedSparkline = sparkline.map(v => Math.round(((v - min) / range) * 100));
+
+  const avgSpark = sparkline.reduce((a, b) => a + b, 0) / sparkline.length;
+  let label: "Low" | "Typical" | "High" = "Typical";
+  
+  if (currentPrice < avgSpark * 0.95) label = "Low";
+  else if (currentPrice > avgSpark * 1.05) label = "High";
+
+  return { label, sparkline: normalizedSparkline };
 }
 
 export function rankResults(results: SearchResult[]): SearchResult[] {

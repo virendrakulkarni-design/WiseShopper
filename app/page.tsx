@@ -23,6 +23,7 @@ interface ShoppingItem {
   status: "idle" | "clarifying" | "searching" | "done" | "error";
   results?: SearchResult[];
   prevPurchase?: PurchaseRecord | null;
+  watching?: boolean;
 }
 
 interface Clarification {
@@ -51,13 +52,8 @@ function formatINR(n: number) {
 }
 // ── Cart CSV handling ────────────────────────────────────────
 function addToCart(item: { item: string; platform: string; price: number; link: string }) {
-  // Open the platform link in a new tab to allow user to add the item to cart.
-  if (item.link) {
-    window.open(item.link, "_blank");
-    console.log(`addToCart: Opened ${item.platform} for ${item.item} (${formatINR(item.price)})`);
-  } else {
-    console.warn('addToCart: No link provided for', item);
-  }
+  // Opening the platform link in a new tab is not required.
+  console.log(`addToCart: Added ${item.platform} for ${item.item} (${formatINR(item.price)})`);
 }
 
 
@@ -68,6 +64,21 @@ const QUICK_ITEMS = [
   "Colgate Toothpaste",
   "Dr Ortho Oil",
   "Tata Salt 1kg",
+];
+
+const POPULAR_CATEGORIES = [
+  { label: "Groceries", icon: "🛒" },
+  { label: "Electronics", icon: "📱" },
+  { label: "Pharmacy", icon: "💊" },
+  { label: "Beauty", icon: "💄" },
+  { label: "Home", icon: "🏠" },
+];
+
+const TRENDING_PRODUCTS = [
+  { name: "Moi Soi Veg Hakka Noodles 150g", price: "₹65", img: "🍜" },
+  { name: "Slurrp Farm Millet Noodles", price: "₹99", img: "🍝" },
+  { name: "Parachute 100% Pure Coconut Oil 200ml", price: "₹141", img: "🥥" },
+  { name: "Himalaya Baby Massage Oil 200ml", price: "₹244", img: "👶" },
 ];
 
 const SORT_FIELDS: { field: SortField; label: string; icon: string; defaultDir: "asc" | "desc" }[] = [
@@ -83,6 +94,8 @@ const SORT_FIELDS: { field: SortField; label: string; icon: string; defaultDir: 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function WiseShopper() {
   const [inputText, setInputText] = useState("");
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [items, setItems] = useState<ShoppingItem[]>([]);
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
   const [clarification, setClarification] = useState<Clarification | null>(null);
@@ -110,6 +123,30 @@ export default function WiseShopper() {
   // Cart selections state (checkboxes)
   const [cartSelections, setCartSelections] = useState<Record<string, boolean>>({});
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
+  // Toast notification
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(null), 3000);
+  };
+
+  // Visual Search
+  const [isVisualSearching, setIsVisualSearching] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleVisualSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setIsVisualSearching(true);
+      setTimeout(() => {
+        setIsVisualSearching(false);
+        const mockDetectedItem = "Tata Salt 1kg";
+        handleQuickAdd(mockDetectedItem);
+        showToast(`📷 Visual Search: Detected "${mockDetectedItem}"!`);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }, 2500);
+    }
+  };
 
   useEffect(() => { setHistory(loadHistory()); setStats(getTotalSavings()); }, []);
 
@@ -197,7 +234,26 @@ export default function WiseShopper() {
     });
     setItems((prev) => [...prev, ...newItems]);
     setInputText("");
-    textareaRef.current?.focus();
+    setIsSearchOpen(false);
+  };
+
+  const handleQuickAdd = (itemText: string) => {
+    const lang = detectLanguage(itemText);
+    const normalized = lang !== "en" ? normalizeToEnglish(itemText) : itemText;
+    const prev = wasItemPurchasedBefore(normalized);
+    const newItem: ShoppingItem = {
+      id: genId(),
+      raw: itemText,
+      normalized,
+      language: lang,
+      category: "all",
+      status: "idle",
+      results: undefined,
+      prevPurchase: prev,
+    };
+    setItems((prevItems) => [...prevItems, newItem]);
+    setInputText("");
+    setIsSearchOpen(false);
   };
 
   // ── Clarify one item via Gemini API ──
@@ -327,7 +383,13 @@ export default function WiseShopper() {
   const activeItem = activeItemId ? items.find((i) => i.id === activeItemId) : null;
 
   return (
-    <div>
+    <div className="main-content">
+      {/* Toast Notification */}
+      {toastMsg && (
+        <div className="toast-notification">
+          {toastMsg}
+        </div>
+      )}
       {/* ─── NAVBAR ─────────────────────────────────────────────── */}
       <nav className="navbar">
         <div className="logo">
@@ -448,36 +510,107 @@ export default function WiseShopper() {
           <section className="search-section">
             <div className="search-card">
               <div className="search-header">
-                <span className="search-label">🛒 Add items to your shopping list</span>
+                <span className="search-label">🛒 Search or add items to your list</span>
                 <span className={`lang-badge lang-${detectedLang}`}>
                   {getLanguageLabel(detectedLang)}
                 </span>
               </div>
-              <textarea
-                ref={textareaRef}
-                className="item-input"
-                value={inputText}
-                onChange={(e) => handleInputChange(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    parseItems();
-                  }
-                }}
-                placeholder={`Type items and press Enter (one per line or comma-separated)\nExamples:\nDolo 650 tablets\nAmul Butter 500g\nDr Ortho Pain Oil Strong\n\nहिंदी में भी लिख सकते हैं: दर्द की दवाई, चावल 5kg\nमराठी: साबण, कांदा पावडर`}
-              />
-              <div className="quick-adds">
-                <span style={{fontSize:11, color:'var(--text-muted)', alignSelf:'center'}}>Quick add:</span>
-                {QUICK_ITEMS.map((q) => (
-                  <button key={q} className="quick-chip" onClick={() => { setInputText(q); handleInputChange(q); }}>
-                    {q}
+              
+              <div className="search-container-relative">
+                <span className="search-icon-left">🔍</span>
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  className="jiomart-search-input"
+                  value={inputText}
+                  onChange={(e) => handleInputChange(e.target.value)}
+                  onFocus={() => setIsSearchOpen(true)}
+                  onBlur={() => setTimeout(() => setIsSearchOpen(false), 200)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      if (inputText.trim()) {
+                        handleQuickAdd(inputText);
+                        searchInputRef.current?.blur();
+                      }
+                    }
+                  }}
+                  placeholder="Search for groceries, medicines, electronics..."
+                />
+                
+                {/* Visual Search Camera Icon */}
+                {!inputText && (
+                  <button 
+                    className="visual-search-btn" 
+                    title="Search by Image"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {isVisualSearching ? <span className="spinner" style={{width: 14, height: 14, borderTopColor: "var(--accent)"}}></span> : "📷"}
                   </button>
-                ))}
+                )}
+                
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  accept="image/*" 
+                  style={{ display: "none" }} 
+                  onChange={handleVisualSearch} 
+                />
+
+                {inputText && (
+                  <button className="search-clear-btn" onClick={() => { setInputText(''); searchInputRef.current?.focus(); }}>
+                    ✕
+                  </button>
+                )}
+
+                {isSearchOpen && (
+                  <div className="search-dropdown-overlay">
+                    {!inputText.trim() ? (
+                      <>
+                        <div className="dropdown-section-title">Popular categories</div>
+                        <div className="popular-categories">
+                          {POPULAR_CATEGORIES.map((cat) => (
+                            <div key={cat.label} className="cat-bubble-wrap" onClick={() => handleQuickAdd(cat.label)}>
+                              <div className="cat-bubble">{cat.icon}</div>
+                              <span className="cat-bubble-label">{cat.label}</span>
+                            </div>
+                          ))}
+                        </div>
+                        
+                        <div className="dropdown-section-title">Try something new</div>
+                        <div className="trending-products">
+                          {TRENDING_PRODUCTS.map((prod) => (
+                            <div key={prod.name} className="trending-card" onClick={() => handleQuickAdd(prod.name)}>
+                              <div className="trending-img" style={{display:'flex', alignItems:'center', justifyContent:'center', fontSize: 40}}>{prod.img}</div>
+                              <div className="trending-name">{prod.name}</div>
+                              <div className="trending-price">{prod.price}</div>
+                              <button className="trending-add-btn">Add</button>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="dropdown-section-title">Suggestions</div>
+                        <div className="autocomplete-row" onClick={() => handleQuickAdd(inputText)}>
+                          <div className="autocomplete-img" style={{display:'flex', alignItems:'center', justifyContent:'center', fontSize: 24, border:'1px solid var(--border)'}}>🔍</div>
+                          <span className="autocomplete-text">{inputText}</span>
+                        </div>
+                        <div className="autocomplete-row" onClick={() => handleQuickAdd(inputText + " 500g")}>
+                          <div className="autocomplete-img" style={{display:'flex', alignItems:'center', justifyContent:'center', fontSize: 24, border:'1px solid var(--border)'}}>📦</div>
+                          <span className="autocomplete-text">{inputText} 500g</span>
+                        </div>
+                        <div className="autocomplete-row" onClick={() => handleQuickAdd(inputText + " 1kg")}>
+                          <div className="autocomplete-img" style={{display:'flex', alignItems:'center', justifyContent:'center', fontSize: 24, border:'1px solid var(--border)'}}>⚖️</div>
+                          <span className="autocomplete-text">{inputText} 1kg</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
+
               <div className="search-actions">
-                <button className="btn-primary" onClick={parseItems} disabled={!inputText.trim()}>
-                  ➕ Add to List
-                </button>
                 <button
                   className="btn-primary"
                   style={{ background: "linear-gradient(135deg, #22c55e, #16a34a)", boxShadow: "0 4px 15px rgba(34,197,94,0.35)" }}
@@ -604,6 +737,19 @@ export default function WiseShopper() {
 
             return (
             <div className="results-table-wrap">
+              {/* Main Product Image from the Best Value option */}
+              <div style={{ display: "flex", gap: "16px", marginBottom: "16px", padding: "16px", background: "var(--bg-primary)", borderRadius: "8px", border: "1px solid var(--border-color)", alignItems: "center" }}>
+                <img 
+                  src={sortedResults[0].imageUrl} 
+                  alt={activeItem.normalized} 
+                  style={{ width: "80px", height: "80px", objectFit: "cover", borderRadius: "8px" }}
+                />
+                <div>
+                  <h3 style={{ margin: "0 0 4px 0", fontSize: "1.2rem", fontWeight: "600" }}>{activeItem.normalized}</h3>
+                  <div style={{ fontSize: "0.9rem", color: "var(--text-muted)" }}>Best price: {formatINR(sortedResults[0].estimatedPrice)} at {sortedResults[0].platform.name}</div>
+                </div>
+              </div>
+
               {/* Previously purchased banner */}
               {activeItem.prevPurchase && (
                 <div style={{padding:"14px 20px", background:"rgba(251,191,36,0.08)", borderBottom:"1px solid rgba(251,191,36,0.2)", fontSize:13, color:"#fbbf24", display:"flex", alignItems:"center", gap:8}}>
@@ -619,7 +765,7 @@ export default function WiseShopper() {
                   <div>
                     <strong>Verify product type before buying!</strong> {formWarning}
                     <br/>
-                    <span style={{color:"#94a3b8"}}>Tip: hover over any product image to zoom in, or click "Open ↗" to confirm on platform. You can also refine the search term (e.g. "Dr Ortho pain relief oil" instead of just "oil").</span>
+                    <span style={{color:"#94a3b8"}}>Tip: hover over any product image to zoom in, or click &quot;Open ↗&quot; to confirm on platform. You can also refine the search term (e.g. &quot;Dr Ortho pain relief oil&quot; instead of just &quot;oil&quot;).</span>
                   </div>
                 </div>
               )}
@@ -701,7 +847,6 @@ export default function WiseShopper() {
               <table className="results-table">
                 <thead>
                   <tr>
-                    <th>Photo</th>
                     <th>Platform</th>
                     <th>Product Form</th>
                     <th>Price</th>
@@ -717,25 +862,6 @@ export default function WiseShopper() {
                 <tbody>
                   {displayResults.map((r, idx) => (
                     <tr key={r.platform.id} className={idx === 0 && sortCriteria.length === 0 ? "best-row" : ""}>
-                      {/* Product image with hover zoom */}
-                      <td>
-                        <div
-                          className="img-thumb-wrap"
-                          onMouseEnter={(e) => {
-                            const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                            setZoomImg({ url: r.imageUrl, platform: r.platform.name, x: rect.right, y: rect.top });
-                          }}
-                          onMouseLeave={() => setZoomImg(null)}
-                        >
-                          <img
-                            className="img-thumb"
-                            src={r.imageUrl}
-                            alt={`${activeItem.normalized} on ${r.platform.name}`}
-                            loading="lazy"
-                            onError={(e) => { (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='52'%3E%3Crect width='52' height='52' fill='%231a2235'/%3E%3Ctext x='26' y='34' text-anchor='middle' font-size='24'%3E📦%3C/text%3E%3C/svg%3E"; }}
-                          />
-                        </div>
-                      </td>
                       {/* Platform */}
                       <td>
                         <div className="platform-cell">
@@ -758,8 +884,24 @@ export default function WiseShopper() {
                             )}
                           </td>
                           <td>
+                            {r.priceInsight && (
+                              <div className={`price-insight-badge insight-${r.priceInsight.label}`}>
+                                {r.priceInsight.label === "Low" ? "📉" : r.priceInsight.label === "High" ? "📈" : "📊"} {r.priceInsight.label} Price
+                              </div>
+                            )}
                             <div className="price-cell">{formatINR(r.estimatedPrice)}</div>
                             <div className="mrp-strike">MRP {formatINR(r.estimatedMrp)}</div>
+                            {r.priceInsight && (
+                              <div className="sparkline-container" title="30-day price trend">
+                                {r.priceInsight.sparkline.map((val, i) => (
+                                  <div 
+                                    key={i} 
+                                    className={`sparkline-bar ${i === r.priceInsight!.sparkline.length - 1 ? 'latest' : ''}`}
+                                    style={{ height: `${Math.max(10, val)}%` }}
+                                  />
+                                ))}
+                              </div>
+                            )}
                           </td>
                           <td><span className="discount-pct">-{r.discount}%</span></td>
                           <td>
@@ -782,6 +924,11 @@ export default function WiseShopper() {
                               </div>
                               <span className="review-bar-pct">{r.positiveReviews}% 👍</span>
                             </div>
+                            {r.aiSummary && (
+                              <div className="ai-review-summary" title="AI Review Summary">
+                                <span>✨</span> {r.aiSummary}
+                              </div>
+                            )}
                           </td>
                           <td>
                             {r.badge && (
@@ -811,6 +958,12 @@ export default function WiseShopper() {
                                     ...prev,
                                     [`${r.platform.id}-${activeItem.id}`]: true,
                                   }));
+                                } else {
+                                  setCartSelections((prev) => {
+                                    const next = { ...prev };
+                                    delete next[`${r.platform.id}-${activeItem.id}`];
+                                    return next;
+                                  });
                                 }
                               }}
                               title="Add to cart"
@@ -920,7 +1073,7 @@ export default function WiseShopper() {
             <div style={{textAlign:"center", padding:"60px 20px", color:"var(--text-muted)"}}>
               <div style={{fontSize:48, marginBottom:16}}>📭</div>
               <div>No purchases recorded yet.</div>
-              <div style={{fontSize:13, marginTop:8}}>Mark items as "Bought" after comparing prices to track your history.</div>
+              <div style={{fontSize:13, marginTop:8}}>Mark items as &quot;Bought&quot; after comparing prices to track your history.</div>
             </div>
           ) : (
             history.map((rec) => (
@@ -993,7 +1146,7 @@ export default function WiseShopper() {
                 WiseShopper saved you {formatINR(stats.totalSavings)}!
               </div>
               <div style={{fontSize:13, color:"var(--text-muted)", marginTop:6}}>
-                That's money back in your pocket. Keep shopping smart!
+                That&apos;s money back in your pocket. Keep shopping smart!
               </div>
             </div>
           )}

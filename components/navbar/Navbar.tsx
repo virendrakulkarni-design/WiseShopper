@@ -27,9 +27,24 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <>
       <nav className="navbar">
-        <div className="logo" onClick={() => setView("home")} style={{ cursor: "pointer" }}>
+        <div className="logo" onClick={() => setView("home")} style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
           <span className="logo-icon">🛒</span>
           <span>WiseShopper</span>
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              background: "linear-gradient(135deg, rgba(34,197,94,0.2), rgba(16,185,129,0.2))",
+              color: "#22c55e",
+              border: "1px solid rgba(34,197,94,0.4)",
+              borderRadius: 12,
+              padding: "2px 8px",
+              letterSpacing: "0.5px",
+              marginLeft: 4,
+            }}
+          >
+            v2.2.0
+          </span>
         </div>
 
         <div className="nav-links">

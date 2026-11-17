@@ -60,13 +60,27 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
   const [selectedSubstitute, setSelectedSubstitute] = useState<GenericSubstitute | null>(null);
 
   const doneItems = items.filter((i) => i.results && i.results.length > 0);
+  const isSearching = items.some((i) => i.status === "searching");
   const currentItem = doneItems.find((i) => i.id === activeItemId) || doneItems[0];
 
-  if (!currentItem || !currentItem.results) {
+  if (!currentItem || !currentItem.results || currentItem.results.length === 0) {
+    if (isSearching) {
+      return (
+        <div style={{ textAlign: "center", padding: "60px 20px" }}>
+          <div className="spinner" style={{ width: 44, height: 44, margin: "0 auto 16px" }} />
+          <div style={{ fontSize: 18, fontWeight: 600, color: "var(--text-primary)" }}>
+            Searching across 18+ Indian stores…
+          </div>
+          <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 6 }}>
+            Comparing live prices on 1mg, Apollo, PharmEasy, Blinkit, Amazon, Netmeds, MedPlus…
+          </div>
+        </div>
+      );
+    }
     return (
       <div style={{ textAlign: "center", padding: "60px 20px", color: "var(--text-muted)" }}>
         <div style={{ fontSize: 40, marginBottom: 12 }}>🔍</div>
-        <div>No search results yet. Add items and click &ldquo;Compare Prices&rdquo;.</div>
+        <div>No search results yet. Type an item above and click &ldquo;Search&rdquo;.</div>
       </div>
     );
   }

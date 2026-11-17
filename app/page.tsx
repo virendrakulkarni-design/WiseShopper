@@ -200,18 +200,16 @@ export default function WiseShopper() {
     setView("results");
     setIsSearchingAll(true);
 
-    const canSearch = await clarifyItem(newItem);
-    if (canSearch) {
-      const results = await searchItem(newItem);
-      if (results.length > 0) {
-        setActiveItemId(newItem.id);
-        const { singlePlatformPlans, bestSplit, savings } = optimizeCart([
-          { itemName: newItem.normalized, results },
-        ]);
-        setCartPlans(singlePlatformPlans);
-        setSplitPlan(bestSplit);
-        setSplitSavings(savings);
-      }
+    // Run direct search immediately without blocking
+    const results = await searchItem(newItem);
+    if (results.length > 0) {
+      setActiveItemId(newItem.id);
+      const { singlePlatformPlans, bestSplit, savings } = optimizeCart([
+        { itemName: newItem.normalized, results },
+      ]);
+      setCartPlans(singlePlatformPlans);
+      setSplitPlan(bestSplit);
+      setSplitSavings(savings);
     }
     setIsSearchingAll(false);
   };
@@ -231,13 +229,10 @@ export default function WiseShopper() {
         if (!firstFoundId) firstFoundId = item.id;
         continue;
       }
-      const canSearch = await clarifyItem(item);
-      if (canSearch) {
-        const results = await searchItem(item);
-        if (results.length > 0) {
-          completedItems.push({ itemName: item.normalized, results });
-          if (!firstFoundId) firstFoundId = item.id;
-        }
+      const results = await searchItem(item);
+      if (results.length > 0) {
+        completedItems.push({ itemName: item.normalized, results });
+        if (!firstFoundId) firstFoundId = item.id;
       }
     }
 
@@ -417,7 +412,12 @@ export default function WiseShopper() {
         <section className="results-section">
           <div className="results-header">
             <div>
-              <div className="results-title">📊 Multi-Platform Price Comparison</div>
+              <div className="results-title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span>📊 Multi-Platform Price Comparison</span>
+                <span style={{ fontSize: 12, padding: "2px 8px", background: "rgba(34,197,94,0.15)", color: "#22c55e", border: "1px solid rgba(34,197,94,0.4)", borderRadius: 12, fontWeight: 700 }}>
+                  v2.2.0
+                </span>
+              </div>
               <div className="results-subtitle">
                 Delivering to <strong>{location.area}, {location.city} ({location.pincode})</strong> • Real-time offers & live delivery charges
               </div>

@@ -38,7 +38,7 @@ export default function WiseShopper() {
   const [stats, setStats] = useState({ totalSavings: 0, totalOrders: 0, topPlatform: "—", totalPoints: 0 });
   const [view, setView] = useState<"home" | "results" | "history" | "savings">("home");
   const [location, setLocationState] = useState<LocationInfo>(getSavedLocation());
-  const [theme, setTheme] = useState<string>("light");
+  const [theme, setTheme] = useState<string>("dark");
   const [cartSelections, setCartSelections] = useState<Record<string, boolean>>({});
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
@@ -57,11 +57,31 @@ export default function WiseShopper() {
     setHistory(loadHistory());
     setStats(getTotalSavings());
     setLocationState(getSavedLocation());
+
+    // Restore saved theme or default to dark
+    try {
+      const savedTheme = localStorage.getItem("wiseshopper_theme");
+      if (savedTheme) {
+        setTheme(savedTheme);
+      } else {
+        setTheme("dark");
+      }
+    } catch {}
   }, []);
+
+  const handleSetTheme = (newTheme: string) => {
+    setTheme(newTheme);
+    try {
+      localStorage.setItem("wiseshopper_theme", newTheme);
+    } catch {}
+  };
 
   useEffect(() => {
     document.body.classList.remove("theme-light", "theme-dark", "theme-professional");
     document.body.classList.add(`theme-${theme}`);
+    try {
+      localStorage.setItem("wiseshopper_theme", theme);
+    } catch {}
   }, [theme]);
 
   // ── Add single item ──
@@ -375,7 +395,7 @@ export default function WiseShopper() {
         view={view}
         setView={setView}
         theme={theme}
-        setTheme={setTheme}
+        setTheme={handleSetTheme}
         location={location}
         setLocation={setLocation}
         hasResults={hasDoneResults}

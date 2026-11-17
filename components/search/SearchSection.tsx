@@ -113,7 +113,22 @@ export const SearchSection: React.FC<SearchSectionProps> = ({
         {/* Search Card */}
         <div className="search-card">
           <div className="search-header">
-            <span className="search-label">🔍 Add items to compare prices across stores</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span className="search-label">🔍 Add items to compare prices across stores</span>
+              <span
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  background: "rgba(34,197,94,0.15)",
+                  color: "#22c55e",
+                  border: "1px solid rgba(34,197,94,0.3)",
+                  borderRadius: 10,
+                  padding: "1px 6px",
+                }}
+              >
+                v2.2.0
+              </span>
+            </div>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <span className={`lang-badge lang-${detectedLang}`}>
                 {getLanguageLabel(detectedLang)}

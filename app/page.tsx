@@ -149,7 +149,7 @@ export default function WiseShopper() {
   }, []);
 
   // ── Search single item ──
-  const searchItem = useCallback(async (item: ShoppingItem) => {
+  const searchItem = useCallback(async (item: ShoppingItem): Promise<SearchResult[]> => {
     setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, status: "searching" } : i)));
 
     try {
@@ -159,16 +159,62 @@ export default function WiseShopper() {
         body: JSON.stringify({ item: item.normalized, category: item.category }),
       });
       const data = await res.json();
+      const results: SearchResult[] = data.results || [];
 
       setItems((prev) =>
         prev.map((i) =>
-          i.id === item.id ? { ...i, status: "done", results: data.results || [] } : i
+          i.id === item.id ? { ...i, status: "done", results } : i
         )
       );
+      return results;
     } catch {
       setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, status: "error" } : i)));
+      return [];
     }
   }, []);
+
+  // ── Immediate Single Item Search ──
+  const handleInstantSearch = async (text: string) => {
+    if (!text || !text.trim()) return;
+    const clean = text.trim();
+    const lang = detectLanguage(clean);
+    const normalized = lang !== "en" ? normalizeToEnglish(clean) : clean;
+    const prev = wasItemPurchasedBefore(normalized);
+    const newItem: ShoppingItem = {
+      id: genId(),
+      raw: clean,
+      normalized,
+      language: lang,
+      category: "all",
+      status: "searching",
+      results: undefined,
+      prevPurchase: prev,
+    };
+
+    setItems((prevItems) => {
+      const existing = prevItems.filter((i) => i.raw.toLowerCase() !== clean.toLowerCase());
+      return [...existing, newItem];
+    });
+
+    setActiveItemId(newItem.id);
+    setView("results");
+    setIsSearchingAll(true);
+
+    const canSearch = await clarifyItem(newItem);
+    if (canSearch) {
+      const results = await searchItem(newItem);
+      if (results.length > 0) {
+        setActiveItemId(newItem.id);
+        const { singlePlatformPlans, bestSplit, savings } = optimizeCart([
+          { itemName: newItem.normalized, results },
+        ]);
+        setCartPlans(singlePlatformPlans);
+        setSplitPlan(bestSplit);
+        setSplitSavings(savings);
+      }
+    }
+    setIsSearchingAll(false);
+  };
 
   // ── Search ALL items & run cart optimizer ──
   const searchAll = async () => {
@@ -176,25 +222,37 @@ export default function WiseShopper() {
     setIsSearchingAll(true);
     setView("results");
 
+    const completedItems: { itemName: string; results: SearchResult[] }[] = [];
+    let firstFoundId: string | null = null;
+
     for (const item of items) {
-      if (item.status === "done") continue;
+      if (item.status === "done" && item.results && item.results.length > 0) {
+        completedItems.push({ itemName: item.normalized, results: item.results });
+        if (!firstFoundId) firstFoundId = item.id;
+        continue;
+      }
       const canSearch = await clarifyItem(item);
-      if (canSearch) await searchItem(item);
+      if (canSearch) {
+        const results = await searchItem(item);
+        if (results.length > 0) {
+          completedItems.push({ itemName: item.normalized, results });
+          if (!firstFoundId) firstFoundId = item.id;
+        }
+      }
     }
 
-    // Set first completed item as active
-    const firstDone = items.find((i) => i.results && i.results.length > 0) || items[0];
-    if (firstDone) setActiveItemId(firstDone.id);
+    if (firstFoundId) {
+      setActiveItemId(firstFoundId);
+    } else if (items[0]) {
+      setActiveItemId(items[0].id);
+    }
 
-    // Build cart optimizer plans
-    const cartItems = items
-      .filter((i) => i.results && i.results.length > 0)
-      .map((i) => ({ itemName: i.normalized, results: i.results! }));
-
-    const { singlePlatformPlans, bestSplit, savings } = optimizeCart(cartItems);
-    setCartPlans(singlePlatformPlans);
-    setSplitPlan(bestSplit);
-    setSplitSavings(savings);
+    if (completedItems.length > 0) {
+      const { singlePlatformPlans, bestSplit, savings } = optimizeCart(completedItems);
+      setCartPlans(singlePlatformPlans);
+      setSplitPlan(bestSplit);
+      setSplitSavings(savings);
+    }
     setIsSearchingAll(false);
   };
 
@@ -214,7 +272,19 @@ export default function WiseShopper() {
 
     setItems((prev) => prev.map((i) => (i.id === itemId ? newItem : i)));
     setClarification(null);
-    await searchItem(newItem);
+    setIsSearchingAll(true);
+
+    const results = await searchItem(newItem);
+    if (results.length > 0) {
+      setActiveItemId(newItem.id);
+      const { singlePlatformPlans, bestSplit, savings } = optimizeCart([
+        { itemName: newItem.normalized, results },
+      ]);
+      setCartPlans(singlePlatformPlans);
+      setSplitPlan(bestSplit);
+      setSplitSavings(savings);
+    }
+    setIsSearchingAll(false);
   };
 
   // ── Search generic alternative ──
@@ -332,6 +402,7 @@ export default function WiseShopper() {
           onRemoveItem={removeItem}
           onClearItems={clearItems}
           onSearchAll={searchAll}
+          onInstantSearch={handleInstantSearch}
           isSearchingAll={isSearchingAll}
           onSelectActiveItem={(id) => {
             setActiveItemId(id);

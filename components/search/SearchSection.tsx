@@ -26,6 +26,7 @@ interface SearchSectionProps {
   onRemoveItem: (id: string) => void;
   onClearItems: () => void;
   onSearchAll: () => void;
+  onInstantSearch: (text: string) => void;
   isSearchingAll: boolean;
   onSelectActiveItem: (id: string) => void;
   showToast: (msg: string) => void;
@@ -55,6 +56,7 @@ export const SearchSection: React.FC<SearchSectionProps> = ({
   onRemoveItem,
   onClearItems,
   onSearchAll,
+  onInstantSearch,
   isSearchingAll,
   onSelectActiveItem,
   showToast,
@@ -71,7 +73,18 @@ export const SearchSection: React.FC<SearchSectionProps> = ({
     setDetectedLang(detectLanguage(val));
   };
 
-  const handleAddCurrent = () => {
+  const handleTriggerSearch = (val?: string) => {
+    const textToSearch = (val !== undefined ? val : inputText).trim();
+    if (!textToSearch) {
+      if (items.length > 0) onSearchAll();
+      return;
+    }
+    onInstantSearch(textToSearch);
+    setInputText("");
+    setIsSearchOpen(false);
+  };
+
+  const handleAddCurrentOnly = () => {
     if (!inputText.trim()) return;
     onAddItem(inputText.trim());
     setInputText("");
@@ -116,12 +129,13 @@ export const SearchSection: React.FC<SearchSectionProps> = ({
             </div>
           </div>
 
-          <div className="search-container-relative">
+          <div className="search-container-relative" style={{ display: "flex", alignItems: "center" }}>
             <span className="search-icon-left">🔍</span>
             <input
               ref={searchInputRef}
               type="text"
               className="jiomart-search-input"
+              style={{ paddingRight: inputText ? 140 : 120 }}
               value={inputText}
               onChange={(e) => handleInputChange(e.target.value)}
               onFocus={() => setIsSearchOpen(true)}
@@ -129,7 +143,7 @@ export const SearchSection: React.FC<SearchSectionProps> = ({
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
-                  handleAddCurrent();
+                  handleTriggerSearch();
                 }
               }}
               placeholder="Search in English, हिंदी, मराठी (e.g. Dolo 650, आटा 5kg, तेल, Paracetamol)..."
@@ -139,6 +153,7 @@ export const SearchSection: React.FC<SearchSectionProps> = ({
             {!inputText && (
               <button
                 className="visual-search-btn"
+                style={{ right: 88 }}
                 title="Scan Prescription or Product Photo"
                 onClick={() => setShowVisualModal(true)}
               >
@@ -149,6 +164,7 @@ export const SearchSection: React.FC<SearchSectionProps> = ({
             {inputText && (
               <button
                 className="search-clear-btn"
+                style={{ right: 90 }}
                 onClick={() => {
                   setInputText("");
                   searchInputRef.current?.focus();
@@ -157,6 +173,31 @@ export const SearchSection: React.FC<SearchSectionProps> = ({
                 ✕
               </button>
             )}
+
+            {/* Instant Search Button */}
+            <button
+              className="btn-primary"
+              style={{
+                position: "absolute",
+                right: 6,
+                top: "50%",
+                transform: "translateY(-50%)",
+                padding: "8px 16px",
+                fontSize: 13,
+                fontWeight: 600,
+                borderRadius: 24,
+                background: "linear-gradient(135deg, #22c55e, #16a34a)",
+                boxShadow: "0 2px 8px rgba(34,197,94,0.35)",
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                zIndex: 2,
+              }}
+              onClick={() => handleTriggerSearch()}
+              title="Compare prices across all stores"
+            >
+              Search
+            </button>
 
             {/* Dropdown Suggestions */}
             {isSearchOpen && (
@@ -169,10 +210,7 @@ export const SearchSection: React.FC<SearchSectionProps> = ({
                         <div
                           key={cat.label}
                           className="cat-bubble-wrap"
-                          onClick={() => {
-                            onAddItem(cat.query);
-                            setIsSearchOpen(false);
-                          }}
+                          onClick={() => handleTriggerSearch(cat.query)}
                         >
                           <div className="cat-bubble">{cat.icon}</div>
                           <span className="cat-bubble-label">{cat.label}</span>
@@ -186,10 +224,7 @@ export const SearchSection: React.FC<SearchSectionProps> = ({
                         <span
                           key={chip}
                           className="quick-chip"
-                          onClick={() => {
-                            onAddItem(chip);
-                            setIsSearchOpen(false);
-                          }}
+                          onClick={() => handleTriggerSearch(chip)}
                         >
                           + {chip}
                         </span>
@@ -198,23 +233,19 @@ export const SearchSection: React.FC<SearchSectionProps> = ({
                   </>
                 ) : (
                   <>
-                    <div className="dropdown-section-title">Add & Search</div>
+                    <div className="dropdown-section-title">Direct Comparison</div>
                     <div
                       className="autocomplete-row"
-                      onClick={() => handleAddCurrent()}
+                      onClick={() => handleTriggerSearch(inputText)}
                     >
                       <div className="autocomplete-img" style={{ display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>
                         🔍
                       </div>
-                      <span className="autocomplete-text">Add <strong>&ldquo;{inputText}&rdquo;</strong></span>
+                      <span className="autocomplete-text">Compare <strong>&ldquo;{inputText}&rdquo;</strong> across stores</span>
                     </div>
                     <div
                       className="autocomplete-row"
-                      onClick={() => {
-                        onAddItem(inputText + " 500g");
-                        setInputText("");
-                        setIsSearchOpen(false);
-                      }}
+                      onClick={() => handleTriggerSearch(inputText + " 500g")}
                     >
                       <div className="autocomplete-img" style={{ display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>
                         📦
@@ -223,11 +254,7 @@ export const SearchSection: React.FC<SearchSectionProps> = ({
                     </div>
                     <div
                       className="autocomplete-row"
-                      onClick={() => {
-                        onAddItem(inputText + " 1kg / 1 pack");
-                        setInputText("");
-                        setIsSearchOpen(false);
-                      }}
+                      onClick={() => handleTriggerSearch(inputText + " 1kg / 1 pack")}
                     >
                       <div className="autocomplete-img" style={{ display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>
                         ⚖️
@@ -248,13 +275,21 @@ export const SearchSection: React.FC<SearchSectionProps> = ({
                 background: "linear-gradient(135deg, #22c55e, #16a34a)",
                 boxShadow: "0 4px 15px rgba(34,197,94,0.35)",
               }}
-              onClick={onSearchAll}
-              disabled={items.length === 0 || isSearchingAll}
+              onClick={() => {
+                if (inputText.trim()) {
+                  handleTriggerSearch();
+                } else {
+                  onSearchAll();
+                }
+              }}
+              disabled={(items.length === 0 && !inputText.trim()) || isSearchingAll}
             >
               {isSearchingAll ? (
                 <>
                   <span className="spinner" /> Searching Across 18+ Stores…
                 </>
+              ) : inputText.trim() ? (
+                `🔍 Compare Prices for "${inputText.trim()}"`
               ) : (
                 `🔍 Compare Prices for ${items.length} Item${items.length === 1 ? "" : "s"}`
               )}

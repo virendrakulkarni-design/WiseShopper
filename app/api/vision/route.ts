@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
 
     if (GEMINI_API_KEY && GEMINI_API_KEY !== "your_gemini_api_key_here") {
       const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
       const prompt = `You are a smart shopping assistant for Indian e-commerce.
 Analyze this image, which could be:

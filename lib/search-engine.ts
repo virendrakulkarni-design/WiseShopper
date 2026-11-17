@@ -8,9 +8,12 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 const USE_REAL_DATA = Boolean(GEMINI_API_KEY);
 let geminiModel: any = null;
 if (USE_REAL_DATA) {
-  console.log("[search-engine] Initializing Gemini model");
-  const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-  geminiModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  try {
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    geminiModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+  } catch (err) {
+    console.warn("[search-engine] Failed to initialize Gemini model:", err);
+  }
 }
 
 export interface Platform {
@@ -66,8 +69,9 @@ export interface SearchResult {
 const platforms: Platform[] = platformsData as Platform[];
 
 export function getCategoryPlatforms(category: string): Platform[] {
-  if (!category || category === "all") return platforms;
-  return platforms.filter((p) => p.categories.includes(category));
+  if (!category || category === "all" || category === "other") return platforms;
+  const filtered = platforms.filter((p) => p.categories.includes(category));
+  return filtered.length > 0 ? filtered : platforms;
 }
 
 export function buildSearchUrl(platform: Platform, query: string): string {
@@ -199,13 +203,23 @@ export async function getAllSearchResults(
   }
 
   let effectiveCategory = category;
-  if (effectiveCategory === "all") {
-    if (normalizedQuery.toLowerCase().includes("milk") || normalizedQuery.toLowerCase().includes("bread") || normalizedQuery.toLowerCase().includes("sugar")) {
+  if (!effectiveCategory || effectiveCategory === "all" || effectiveCategory === "other") {
+    const lq = normalizedQuery.toLowerCase();
+    if (lq.includes("milk") || lq.includes("bread") || lq.includes("sugar") || lq.includes("rice") || lq.includes("atta")) {
       effectiveCategory = "grocery";
-    } else if (normalizedQuery.toLowerCase().includes("dolo") || normalizedQuery.toLowerCase().includes("ortho") || normalizedQuery.toLowerCase().includes("medicine")) {
+    } else if (
+      lq.includes("dolo") ||
+      lq.includes("ortho") ||
+      lq.includes("syndopa") ||
+      lq.includes("tablet") ||
+      lq.includes("capsule") ||
+      lq.includes("cr") ||
+      lq.includes("strip") ||
+      lq.includes("medicine")
+    ) {
       effectiveCategory = "medicines";
     } else {
-      effectiveCategory = "personal_care";
+      effectiveCategory = "all";
     }
   }
 
@@ -214,7 +228,7 @@ export async function getAllSearchResults(
   const { form, warning } = detectProductForm(normalizedQuery);
 
   return relevantPlatforms.map((platform) => {
-    const basePrice = simulatePrice(normalizedQuery, category);
+    const basePrice = simulatePrice(normalizedQuery, effectiveCategory);
     const mrp = Math.round(basePrice * (1 + Math.random() * 0.3 + 0.1));
     const price = Math.round(basePrice * (0.85 + Math.random() * 0.25));
     const discountPct = Math.round(((mrp - price) / mrp) * 100);
@@ -256,7 +270,8 @@ export async function getAllSearchResults(
 function simulatePrice(query: string, category: string): number {
   const lq = query.toLowerCase();
 
-  if (category === "medicines" || lq.includes("tablet") || lq.includes("capsule") || lq.includes("syrup")) {
+  if (category === "medicines" || lq.includes("tablet") || lq.includes("capsule") || lq.includes("syrup") || lq.includes("syndopa") || lq.includes("cr")) {
+    if (lq.includes("syndopa")) return 280;
     if (lq.includes("dolo") || lq.includes("crocin") || lq.includes("650")) return 30;
     if (lq.includes("strip") || lq.includes("pack")) return 120;
     return 80 + Math.random() * 200;

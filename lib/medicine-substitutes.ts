@@ -16,6 +16,30 @@ export interface GenericSubstitute {
 
 export const POPULAR_MEDICINE_SUBSTITUTES: GenericSubstitute[] = [
   {
+    brandName: "Syndopa CR",
+    genericSalt: "Levodopa (200mg) + Carbidopa (50mg) CR",
+    dosage: "Controlled Release (10 Tablets)",
+    brandedPrice: 285,
+    genericPrice: 95,
+    savingsPct: 67,
+    janAushadhiName: "Levodopa + Carbidopa CR Tablets IP 200/50mg",
+    usage: "Parkinson's Disease symptoms, muscle tremors, stiffness",
+    manufacturer: "Sun Pharma",
+    prescriptionRequired: true,
+  },
+  {
+    brandName: "Syndopa Plus",
+    genericSalt: "Levodopa (100mg) + Carbidopa (25mg)",
+    dosage: "10 Tablets",
+    brandedPrice: 115,
+    genericPrice: 42,
+    savingsPct: 63,
+    janAushadhiName: "Levodopa + Carbidopa Tablets IP 100/25mg",
+    usage: "Parkinson's Disease and motor fluctuations",
+    manufacturer: "Sun Pharma",
+    prescriptionRequired: true,
+  },
+  {
     brandName: "Dolo 650",
     genericSalt: "Paracetamol (Acetaminophen)",
     dosage: "650 mg (15 Tablets)",

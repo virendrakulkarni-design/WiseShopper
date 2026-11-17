@@ -63,10 +63,14 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
 
   const handleMouseEnter = (e: React.MouseEvent, r: SearchResult) => {
     const rect = e.currentTarget.getBoundingClientRect();
+    const isRightNearEdge = rect.right + 380 > (typeof window !== "undefined" ? window.innerWidth : 1200);
+    const xPos = isRightNearEdge ? Math.max(16, rect.left - 370) : rect.right + 14;
+    const yPos = Math.max(20, Math.min(rect.top - 20, typeof window !== "undefined" ? window.innerHeight - 440 : 400));
+
     setHoveredCard({
       result: r,
-      x: rect.left,
-      y: rect.bottom + 8,
+      x: xPos,
+      y: yPos,
     });
   };
 
@@ -294,14 +298,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
             >
               {/* Platform */}
               <td>
-                <div
-                  className="platform-cell"
-                  onMouseEnter={(e) => handleMouseEnter(e, r)}
-                  onMouseLeave={handleMouseLeave}
-                  onClick={() => setQuickDetailResult(r)}
-                  style={{ cursor: "pointer" }}
-                  title="Hover or click to preview full details without opening external sites"
-                >
+                <div className="platform-cell">
                   <div
                     className="platform-logo-circle"
                     style={{ background: (r.platform.color || "#3b82f6") + "22" }}
@@ -309,23 +306,43 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                     {r.platform.logo}
                   </div>
                   <div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <span className="platform-link" style={{ fontWeight: 600 }}>
-                        {r.platform.name}
-                      </span>
-                      <span
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <a
+                        href={r.searchUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="platform-link"
+                        style={{ fontWeight: 600 }}
+                        title={`Open ${r.platform.name} search page in new tab`}
+                      >
+                        {r.platform.name} ↗
+                      </a>
+                      <button
+                        type="button"
+                        className="preview-pill-btn"
+                        onMouseEnter={(e) => handleMouseEnter(e, r)}
+                        onMouseLeave={handleMouseLeave}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setQuickDetailResult(r);
+                        }}
                         style={{
-                          fontSize: 10,
-                          background: "rgba(59,130,246,0.15)",
+                          fontSize: 11,
+                          background: "rgba(59,130,246,0.12)",
                           color: "#3b82f6",
                           border: "1px solid rgba(59,130,246,0.3)",
-                          padding: "1px 6px",
-                          borderRadius: 6,
+                          padding: "2px 8px",
+                          borderRadius: 12,
                           fontWeight: 600,
+                          cursor: "pointer",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 3,
                         }}
+                        title="Hover to view pricing breakdown and delivery without visiting store"
                       >
-                        👁️ Preview
-                      </span>
+                        ℹ️ Info
+                      </button>
                     </div>
                     <div className="platform-delivery">🚚 {r.platform.deliveryDays}</div>
                   </div>

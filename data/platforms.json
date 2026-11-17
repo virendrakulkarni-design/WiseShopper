@@ -92,7 +92,7 @@
     "logo": "🩺",
     "color": "#009EE3",
     "baseUrl": "https://www.medplusmart.com",
-    "searchUrl": "https://www.medplusmart.com/search/{query}",
+    "searchUrl": "https://www.medplusmart.com/search?keyword={query}",
     "categories": ["medicines", "personal_care", "healthcare", "vitamins"],
     "deliveryThreshold": 0,
     "avgDelivery": 35,

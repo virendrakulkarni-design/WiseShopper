@@ -58,6 +58,21 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
   const [filterRatingMin, setFilterRatingMin] = useState<string>("");
   const [filterDiscountMin, setFilterDiscountMin] = useState<string>("");
   const [selectedSubstitute, setSelectedSubstitute] = useState<GenericSubstitute | null>(null);
+  const [hoveredCard, setHoveredCard] = useState<{ result: SearchResult; x: number; y: number } | null>(null);
+  const [quickDetailResult, setQuickDetailResult] = useState<SearchResult | null>(null);
+
+  const handleMouseEnter = (e: React.MouseEvent, r: SearchResult) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setHoveredCard({
+      result: r,
+      x: rect.left,
+      y: rect.bottom + 8,
+    });
+  };
+
+  const handleMouseLeave = () => {
+    setHoveredCard(null);
+  };
 
   const doneItems = items.filter((i) => i.results && i.results.length > 0);
   const isSearching = items.some((i) => i.status === "searching");
@@ -279,7 +294,14 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
             >
               {/* Platform */}
               <td>
-                <div className="platform-cell">
+                <div
+                  className="platform-cell"
+                  onMouseEnter={(e) => handleMouseEnter(e, r)}
+                  onMouseLeave={handleMouseLeave}
+                  onClick={() => setQuickDetailResult(r)}
+                  style={{ cursor: "pointer" }}
+                  title="Hover or click to preview full details without opening external sites"
+                >
                   <div
                     className="platform-logo-circle"
                     style={{ background: (r.platform.color || "#3b82f6") + "22" }}
@@ -287,14 +309,24 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                     {r.platform.logo}
                   </div>
                   <div>
-                    <a
-                      href={r.searchUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="platform-link"
-                    >
-                      {r.platform.name} ↗
-                    </a>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span className="platform-link" style={{ fontWeight: 600 }}>
+                        {r.platform.name}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 10,
+                          background: "rgba(59,130,246,0.15)",
+                          color: "#3b82f6",
+                          border: "1px solid rgba(59,130,246,0.3)",
+                          padding: "1px 6px",
+                          borderRadius: 6,
+                          fontWeight: 600,
+                        }}
+                      >
+                        👁️ Preview
+                      </span>
+                    </div>
                     <div className="platform-delivery">🚚 {r.platform.deliveryDays}</div>
                   </div>
                 </div>
@@ -438,6 +470,217 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
           <button className="btn-primary" style={{ padding: "8px 18px", fontSize: 13 }} onClick={onExportCsv}>
             📥 Export Selected Cart to CSV
           </button>
+        </div>
+      )}
+
+      {/* Floating Hover Details Card */}
+      {hoveredCard && (
+        <div
+          style={{
+            position: "fixed",
+            left: Math.min(hoveredCard.x, typeof window !== "undefined" ? window.innerWidth - 380 : 500),
+            top: Math.min(hoveredCard.y, typeof window !== "undefined" ? window.innerHeight - 440 : 400),
+            width: 360,
+            background: "var(--bg-card, #1e293b)",
+            border: "1px solid rgba(255, 255, 255, 0.15)",
+            borderRadius: 16,
+            padding: 18,
+            boxShadow: "0 20px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1)",
+            zIndex: 9999,
+            backdropFilter: "blur(16px)",
+            pointerEvents: "none",
+            color: "var(--text-primary, #f8fafc)",
+            fontSize: 13,
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 24 }}>{hoveredCard.result.platform.logo}</span>
+              <div>
+                <strong style={{ fontSize: 15 }}>{hoveredCard.result.platform.name}</strong>
+                <div style={{ fontSize: 11, color: "var(--text-muted)" }}>📍 Delivering to {pincode}</div>
+              </div>
+            </div>
+            <span style={{ fontSize: 11, padding: "3px 8px", background: "rgba(34,197,94,0.15)", color: "#22c55e", borderRadius: 10, fontWeight: 700 }}>
+              {hoveredCard.result.inStock ? "🟢 In Stock" : "🔴 Out of Stock"}
+            </span>
+          </div>
+
+          <div style={{ background: "rgba(0,0,0,0.2)", borderRadius: 10, padding: "10px 12px", marginBottom: 12 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+              <span style={{ color: "var(--text-muted)" }}>Item Price:</span>
+              <strong style={{ fontSize: 15, color: "#22c55e" }}>{formatINR(hoveredCard.result.estimatedPrice)}</strong>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+              <span style={{ color: "var(--text-muted)" }}>MRP:</span>
+              <span style={{ textDecoration: "line-through", color: "var(--text-muted)" }}>{formatINR(hoveredCard.result.estimatedMrp)}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+              <span style={{ color: "var(--text-muted)" }}>Discount:</span>
+              <span style={{ color: "#38bdf8", fontWeight: 600 }}>{hoveredCard.result.discount}% OFF</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: 6, marginTop: 4 }}>
+              <span>Delivery Fee ({pincode}):</span>
+              <strong>{hoveredCard.result.deliveryCharge === 0 ? "FREE" : formatINR(hoveredCard.result.deliveryCharge)}</strong>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
+              <strong>Total Delivered:</strong>
+              <strong style={{ fontSize: 16, color: "#22c55e" }}>{formatINR(hoveredCard.result.totalCost)}</strong>
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 2 }}>⚡ Delivery Promise:</div>
+            <div style={{ fontWeight: 600 }}>🚚 {hoveredCard.result.platform.deliveryDays}</div>
+          </div>
+
+          {hoveredCard.result.platform.specialOffer && (
+            <div style={{ background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 8, padding: "6px 10px", marginBottom: 10, color: "#fbbf24", fontSize: 12 }}>
+              🏷️ <strong>Store Offer:</strong> {hoveredCard.result.platform.specialOffer}
+            </div>
+          )}
+
+          {hoveredCard.result.aiSummary && (
+            <div style={{ fontSize: 12, color: "var(--text-muted)", fontStyle: "italic", borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: 8 }}>
+              ✨ &ldquo;{hoveredCard.result.aiSummary}&rdquo;
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Quick Detail Modal (Clickable preview) */}
+      {quickDetailResult && (
+        <div
+          className="modal-backdrop"
+          onClick={() => setQuickDetailResult(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.6)",
+            backdropFilter: "blur(6px)",
+            zIndex: 1000,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
+          }}
+        >
+          <div
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "var(--bg-card, #1e293b)",
+              borderRadius: 20,
+              maxWidth: 520,
+              width: "100%",
+              padding: 24,
+              border: "1px solid var(--border)",
+              boxShadow: "0 25px 50px -12px rgba(0,0,0,0.5)",
+              color: "var(--text-primary)",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div
+                  className="platform-logo-circle"
+                  style={{ background: (quickDetailResult.platform.color || "#3b82f6") + "22", width: 44, height: 44, fontSize: 24 }}
+                >
+                  {quickDetailResult.platform.logo}
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 18 }}>{quickDetailResult.platform.name}</h3>
+                  <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                    📍 Live delivery estimate for Pincode {pincode}
+                  </div>
+                </div>
+              </div>
+              <button
+                className="btn-secondary"
+                style={{ borderRadius: "50%", width: 32, height: 32, padding: 0 }}
+                onClick={() => setQuickDetailResult(null)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ padding: 14, background: "rgba(255,255,255,0.03)", borderRadius: 12, marginBottom: 16 }}>
+              <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>
+                {currentItem.normalized}
+              </div>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <span className="form-badge">{quickDetailResult.productForm}</span>
+                <span style={{ fontSize: 12, color: "#22c55e", fontWeight: 600 }}>
+                  {quickDetailResult.inStock ? "🟢 In Stock" : "🔴 Out of Stock"}
+                </span>
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
+              <div style={{ padding: 12, background: "rgba(0,0,0,0.15)", borderRadius: 10 }}>
+                <div style={{ fontSize: 11, color: "var(--text-muted)" }}>Item Price</div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: "#22c55e" }}>
+                  {formatINR(quickDetailResult.estimatedPrice)}
+                </div>
+                <div style={{ fontSize: 11, color: "var(--text-muted)", textDecoration: "line-through" }}>
+                  MRP {formatINR(quickDetailResult.estimatedMrp)} ({quickDetailResult.discount}% off)
+                </div>
+              </div>
+
+              <div style={{ padding: 12, background: "rgba(0,0,0,0.15)", borderRadius: 10 }}>
+                <div style={{ fontSize: 11, color: "var(--text-muted)" }}>Delivery Fee ({pincode})</div>
+                <div style={{ fontSize: 18, fontWeight: 700 }}>
+                  {quickDetailResult.deliveryCharge === 0 ? "FREE" : formatINR(quickDetailResult.deliveryCharge)}
+                </div>
+                <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                  🚚 {quickDetailResult.platform.deliveryDays}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ padding: "12px 14px", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 12, marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontWeight: 600 }}>Total Payable:</span>
+              <span style={{ fontSize: 20, fontWeight: 800, color: "#22c55e" }}>
+                {formatINR(quickDetailResult.totalCost)}
+              </span>
+            </div>
+
+            {quickDetailResult.platform.specialOffer && (
+              <div style={{ background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 10, padding: "10px 14px", marginBottom: 16, color: "#fbbf24", fontSize: 13 }}>
+                🏷️ <strong>Store Offer:</strong> {quickDetailResult.platform.specialOffer}
+              </div>
+            )}
+
+            {genericSub && (
+              <div style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.3)", borderRadius: 10, padding: "10px 14px", marginBottom: 16, fontSize: 12 }}>
+                🌿 <strong>Jan Aushadhi Generic Alternative:</strong> {genericSub.janAushadhiName}
+                <div style={{ marginTop: 2, color: "#10b981", fontWeight: 700 }}>
+                  Save {genericSub.savingsPct}% • Generic Price: ₹{genericSub.genericPrice} (vs ₹{genericSub.brandedPrice} branded)
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+              <button
+                className="btn-primary"
+                style={{ flex: 1, padding: "10px 16px" }}
+                onClick={() => {
+                  onToggleCartSelection(`${quickDetailResult.platform.id}-${currentItem.id}`, quickDetailResult, currentItem);
+                  setQuickDetailResult(null);
+                }}
+              >
+                🛒 Add to WiseShopper Cart
+              </button>
+              <a
+                href={quickDetailResult.searchUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-secondary"
+                style={{ padding: "10px 16px", textDecoration: "none", display: "inline-flex", alignItems: "center" }}
+              >
+                Open Site ↗
+              </a>
+            </div>
+          </div>
         </div>
       )}
 
